@@ -1,7 +1,6 @@
 import tkinter as tk
-from tkinter import ttk,PhotoImage,messagebox
+from tkinter import ttk
 import datetime as dt
-import sqlite3
 from db import *
 
 data=Database('expenses.db')
@@ -12,10 +11,10 @@ class Expenses(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Expense Tracker")
-        self.geometry("400x750")
+        self.geometry("750x750")
         self.resizable(False, False)
         
-        self.font=("Roboto", 17, "bold")
+        self.font=("Roboto", 14, "bold")
         self.notebook=ttk.Notebook(self)
         self.add_expense=tk.Frame(self.notebook)
         self.overview=tk.Frame(self.notebook)
@@ -34,19 +33,26 @@ class Expenses(tk.Tk):
 
         self.analysislbl=tk.Label(self.overview,text="Analysis", font=self.font).place(relx=0.1, rely=0.5)
         
-
+        self.selected_id=0
+        self.count=0
 
         self.add_expenses()
-        self.notebook.pack(expand=True, fill="both")
       
+        self.notebook.pack(expand=True, fill="both")
+        
         self.mainloop()
+
+    
+
+
 
     def saveRecords(self):
         data.insertRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price_box.get(),date=self.date_box.get())
-    
+        
+
     def getDate(self):
-        date= dt.datetime.now()
-        return date.strftime("%d-%m-%Y")
+        date= dt.datetime.now().strftime("%B %d %Y")
+        self.cur_datevar.set(f"{date}")
     
     def clearBox(self):
         self.category_box.delete(0, tk.END)
@@ -55,53 +61,120 @@ class Expenses(tk.Tk):
         self.date_box.delete(0, tk.END)
 
     def balance(self):
-        sum=data.fetchRecords(query="SELECT sum(price) from expense")
-        for x in sum:
-            messagebox.showinfo("Current balance ", f"Amount spent: {x}\n Total Balance: {10000-x}")
+        sum=data.fetchRecords(query="SELECT sum(price) from expenses")
+        for i in sum:
+            for j in i:
+                # messagebox.showinfo("Current balance ", f"Amount spent: {j}\n Total Balance: {10000-j}")
+                self.amount_spent.config(text=f"Amount Spent: ${j}")
+                self.mybalance.config(text=f"Balance: ${10000-j}")
+                
     
     def update(self):
-        data.updateRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price_box.get(),date=self.date_box.get())
+        selected=self.tv.focus()
 
+        data.updateRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price_box.get(),date=self.date_box.get(),rid=self.selected_id)
+        self.tv.item(selected,text="",values=(self.category_box.get(), self.description_box.get(), self.price_box.get(), self.date_box.get(),self.selected_id))
+
+        self.clearbox() 
+        self.tv.after(400, self.refreshdata())   
+    
+    
+    
     def delete(self):
-        data.deleteRecords(id="rowid")
-    
-    
+
+        data.deleteRecords(self.selected_id)
+        self.refreshdata()
+
+    def refreshdata(self):
+        for item in self.tv.get_children():
+            self.tv.delete(item)
+        self.get_records()
+
+
+    def get_records(self):
+        for record in data.fetchRecords(query="SELECT rowid, * FROM expenses"):
+            self.tv.insert(parent="", iid=self.count, index=0, values=(record[0],record[1],record[2],record[3],record[4]))
+            self.count+=1
+        self.tv.after(400, self.refreshdata())
+
+    def record_select(self):
+        selected=self.tv.focus()
+        selected_value=self.tv.item(selected, "values")
+        self.selected_id=selected_value[0]
+        self.category_var.set(selected_value[1])
+        self.description_var.set(selected_value[2])
+        self.price_var.set(selected_value[3])
+        self.date_var.set(str(selected_value[4]))
+
+
+
     
 
+    def exit(self):
+        self.destroy()
+    
  
     def add_expenses(self):
-        f1=tk.Frame(self.add_expense, padx=10, pady=10, bg="#123498")
-        f1.grid(row=0, column=0, sticky="n")  
-        f2=tk.Frame(self.add_expense, bg="#a945de")
-        f2.grid(row=1, column=0, sticky="s")  
-    
-    
-        tk.Label(f2, text="CATEGORY", font=self.font).grid(row=0, column=0, sticky="w")
-        tk.Label(f2, text="DESCRIPTION", font=self.font).grid(row=1, column=0, sticky="w")
-        tk.Label(f2, text="PRICE", font=self.font).grid(row=2, column=0, sticky="w")
-        tk.Label(f2, text="DATE PURCHASED", font=self.font).grid(row=3, column=0, sticky="w")
+        #This is the frame for the expenses tab i created in init
+        #my init method was getting too long for my liking so i decided to write this here instead and call it 
+        #in the init method. 
 
-        self.category_box = tk.Entry(f2, font=("Arial", 17))
+
+        #this is to make the widgets that would later be placed in take equal space
+        #here that is f1 and f2
+        self.add_expense.grid_rowconfigure(0, weight=1)
+        self.add_expense.grid_rowconfigure(1, weight=1)
+        self.add_expense.grid_columnconfigure(0, weight=1)
+
+        #creating two frames 
+        #one for the buttons and textboxes and the other for displaying the info
+        f1=tk.Frame(self.add_expense, bg="red")
+        f1.grid(row=0, column=0, sticky="nsew")  
+        f2=tk.Frame(self.add_expense, bg="#affffe")
+        f2.grid(row=1, column=0, sticky="nsew")  
+
+        f2.rowconfigure(0, weight=1)
+        f2.rowconfigure(1, weight=1)
+        f2.rowconfigure(2, weight=1)
+        f2.rowconfigure(3, weight=1)
+        f2.columnconfigure(2,weight=1)
+        f2.columnconfigure(3, weight=1)
+        
+        self.cur_datevar=tk.StringVar()
+        self.price_var=tk.IntVar()
+        self.category_var=tk.StringVar()
+        self.description_var=tk.StringVar()
+      
+        tk.Label(f2, text="CATEGORY", font=self.font).grid(row=0, column=0, sticky="w", padx=(10,0))
+        tk.Label(f2, text="DESCRIPTION", font=self.font).grid(row=1, column=0, sticky="w", padx=(10,0))
+        tk.Label(f2, text="PRICE", font=self.font).grid(row=2, column=0, sticky="w", padx=(10,0))
+        tk.Label(f2, text="DATE PURCHASED", font=self.font).grid(row=3, column=0, sticky="w", padx=(10,0))
+
+        #category text box
+        self.category_box = tk.Entry(f2, font=("Arial", 17),textvariable=self.category_var)
         self.category_box.grid(row=0, column=1, sticky="ew", padx=(10, 0))
-        self.description_box = tk.Entry(f2, font=("Arial", 17))
+        #description text box
+        self.description_box = tk.Entry(f2, font=("Arial", 17),textvariable=self.description_var)
         self.description_box.grid(row=1, column=1, sticky="ew", padx=(10, 0))
-        self.price_box = tk.Entry(f2, font=("Arial", 17))
+        #price textbox
+        self.price_box = tk.Entry(f2, font=("Arial", 17),textvariable=self.price_var)
         self.price_box.grid(row=2, column=1, sticky="ew", padx=(10, 0))
-        self.date_box = tk.Entry(f2, font=("Arial", 17))
+        #date textbox
+        self.date_box = tk.Entry(f2, font=("Arial", 17),textvariable=self.cur_datevar)
         self.date_box.grid(row=3, column=1, sticky="ew", padx=(10, 0))
        
         savebtn=tk.Button(f2,
                           text="SAVE",
                           bg="#abcdef",
                           fg="#123456",
-                          font=("Nunito", 16, "italic"),
+                          font=("Nunito", 12, "italic"),
                           command=self.saveRecords
                             )   
         clearbtn=tk.Button( f2,
                            text="CLEAR",
                           bg="#abcdef",
                           fg="#123456",
-                          font=("Nunito", 16, "italic"),
+                          font=("Nunito", 12, "italic"),
                           command=self.clearBox)
         
         
@@ -109,29 +182,64 @@ class Expenses(tk.Tk):
                              text="UPDATE",
                           bg="#abcdef",
                           fg="#123456",
-                          font=("Nunito", 16, "italic"),
-                        #   command=
+                          font=("Nunito", 12, "italic"),
+                          command=self.update
                           )
         
         datebtn=tk.Button(f2,
                           text="CURRENT DATE",
                           bg="#abcdef",
                           fg="#123456",
-                          font=("Nunito", 16, "italic"),
+                          font=("Nunito", 12, "italic"),
                           command=self.getDate)
         
         deletebtn=tk.Button(f2,
                             text="DELETE",
                           bg="#abcdef",
                           fg="#123456",
-                          font=("Nunito", 16, "italic"),
-                        #   command=
+                          font=("Nunito", 12, "italic"),
+                          command=self.delete
                           )
-        savebtn.grid(row=0,column=2)
-        updatebtn.grid(row=1, column=2)
-        clearbtn.grid(row=2,column=2)
-        deletebtn.grid(row=0,column=3)
-        datebtn.grid(row=1,column=3)
+        exitbtn=tk.Button(f2,
+                          text="EXIT",
+                          bg="#abcdef",
+                          fg="#123498",
+                          font=("Nunito", 12, "italic"),
+                          command=self.exit
+                          )
+        savebtn.grid(row=0,column=2,padx=(10,0),sticky="ew")
+        updatebtn.grid(row=1, column=2, padx=(10,0),sticky="ew")
+        clearbtn.grid(row=2,column=2, padx=(10,0),sticky="ew")
+        deletebtn.grid(row=0,column=3, padx=(10,0),sticky="ew")
+        datebtn.grid(row=3,column=2, padx=(10,0),sticky="ew")
+        exitbtn.grid(row=1,column=3, padx=(10,0),sticky="ew")
+
+        self.tv=ttk.Treeview(f1)
+        self.tv['columns']=( 'id', 'Category', 'Description', 'Price','Date')
+        self.tv.column("#0", width=0, stretch=tk.NO)
+        self.tv.column("id", anchor="center", width=50)
+        self.tv.column("Category", anchor="center", width=80)
+        self.tv.column("Description", anchor="center", width=200)
+        self.tv.column("Price", anchor="center", width=70)
+        self.tv.column("Date", anchor="center", width=90)
+
+        self.tv.heading("id", text="ID")
+        self.tv.heading("Category", text="CATEGORY")
+        self.tv.heading("Description", text="DESCRIPTION")
+        self.tv.heading("Price", text="PRICE")
+        self.tv.heading("Date", text="DATE")
+
+        self.tv.bind("<ButtonRelease-1>", self.record_select)
+
+        scrollbar=ttk.Scrollbar(f1, orient="vertical", command=self.tv.yview)
+        self.tv.configure(yscrollcommand=scrollbar.set(first=0.01, last=0.5))
+        scrollbar.pack(side="right",fill="y")
+        self.tv.pack(expand=True, fill="both")
+       
+        
+        
+
+        
         
 
         
