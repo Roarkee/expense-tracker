@@ -28,8 +28,12 @@ class Expenses(tk.Tk):
         self.box.place(x=30, y=80)
         self.box.pack_propagate(False)
         self.box_name=tk.Label(self.box,text="WALLET",bg="#ae98cd",font=self.font).place(relx=0.05, rely=0.05,anchor="nw")
-        self.amount_spent=tk.Label(self.box, text="Amount Spent: $     ",font=self.font,bg="#ae98cd").place(relx=0.05,rely=0.45, anchor="nw")
-        self.mybalance=tk.Label(self.box,font=self.font,bg="#ae98cd",text="Balance:$     ").place(relx=0.05, rely=0.8)
+
+        self.amount_spent=tk.Label(self.box, text="Amount Spent: $     ",font=self.font,bg="#ae98cd")
+        self.amount_spent.place(relx=0.05,rely=0.45, anchor="nw")
+
+        self.mybalance=tk.Label(self.box,font=self.font,bg="#ae98cd",text="Balance:$     ")
+        self.mybalance.place(relx=0.05, rely=0.8)
 
         self.analysislbl=tk.Label(self.overview,text="Analysis", font=self.font).place(relx=0.1, rely=0.5)
         
@@ -37,6 +41,7 @@ class Expenses(tk.Tk):
         self.count=0
 
         self.add_expenses()
+        self.get_records()
       
         self.notebook.pack(expand=True, fill="both")
         
@@ -71,15 +76,13 @@ class Expenses(tk.Tk):
     
     def update(self):
         selected=self.tv.focus()
-
         data.updateRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price_box.get(),date=self.date_box.get(),rid=self.selected_id)
         self.tv.item(selected,text="",values=(self.category_box.get(), self.description_box.get(), self.price_box.get(), self.date_box.get(),self.selected_id))
 
-        self.clearbox() 
-        self.tv.after(400, self.refreshdata())   
+        self.clearBox() 
+        self.tv.after(400, self.refreshdata)   
     
-    
-    
+        
     def delete(self):
 
         data.deleteRecords(self.selected_id)
@@ -92,19 +95,22 @@ class Expenses(tk.Tk):
 
 
     def get_records(self):
+        self.count=0
         for record in data.fetchRecords(query="SELECT rowid, * FROM expenses"):
             self.tv.insert(parent="", iid=self.count, index=0, values=(record[0],record[1],record[2],record[3],record[4]))
             self.count+=1
-        self.tv.after(400, self.refreshdata())
+        self.tv.after(400, self.refreshdata)
 
-    def record_select(self):
+    def record_select(self,event):
+
         selected=self.tv.focus()
         selected_value=self.tv.item(selected, "values")
-        self.selected_id=selected_value[0]
-        self.category_var.set(selected_value[1])
-        self.description_var.set(selected_value[2])
-        self.price_var.set(selected_value[3])
-        self.date_var.set(str(selected_value[4]))
+        if selected_value:
+            self.selected_id=selected_value[0]
+            self.category_var.set(selected_value[1])
+            self.description_var.set(selected_value[2])
+            self.price_var.set(selected_value[3])
+            self.cur_datevar.set(str(selected_value[4]))
 
 
 
