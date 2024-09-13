@@ -40,6 +40,7 @@ class Expenses(tk.Tk):
         self.selected_id=0
         self.count=0
 
+        self.balance()
         self.add_expenses()
         self.get_records()
       
@@ -241,19 +242,10 @@ class Expenses(tk.Tk):
         self.tv.configure(yscrollcommand=scrollbar.set(first=0.01, last=0.5))
         scrollbar.pack(side="right",fill="y")
         self.tv.pack(expand=True, fill="both")
-       
-        
-        
 
         
         
 
-        
-
-        
-        
-
-Expenses()
     
 
 

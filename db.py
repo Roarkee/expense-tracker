@@ -29,6 +29,9 @@ class Database:
     def updateRecords(self, category, description, price, date, rid):
         self.cur.execute("UPDATE expenses SET category=?, description=?, price=?, date=? WHERE rowid=?", (category,description,price,date,rid))
         self.conn.commit()
+
+   
+
     
     
     def __del__(self):
