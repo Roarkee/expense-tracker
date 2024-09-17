@@ -6,11 +6,13 @@ class Database:
         self.conn = sqlite3.connect(db_name)
         self.cur = self.conn.cursor()
         self.cur.execute("""CREATE TABLE IF NOT EXISTS expenses             
-            (
-            date DATE, 
+            ( 
+                         
+            category TEXT,
             description TEXT,
-            category TEXT, 
-            price REAL)""")
+                          
+            price REAL,
+            date DATE)""")
         self.conn.commit()
     
     def fetchRecords(self, query):
@@ -19,7 +21,7 @@ class Database:
         return rows
     
     def insertRecords(self, category, description, price, date ):
-        self.cur.execute("INSERT INTO expenses values (?,?,?,?)", (category, description,price, date))
+        self.cur.execute("INSERT INTO expenses (category, description, price, date) values (?,?,?,?)", (category, description,price, date))
         self.conn.commit()
 
     def deleteRecords(self, id):
