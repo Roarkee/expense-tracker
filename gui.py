@@ -37,7 +37,9 @@ class Expenses(tk.Tk):
         self.mybalance=tk.Label(self.box,font=self.font,bg="#ae98cd",text="Balance:$     ")
         self.mybalance.place(relx=0.05, rely=0.8)
 
-        self.analysislbl=tk.Label(self.overview,text="Analysis", font=self.font).place(relx=0.1, rely=0.5)
+        self.analysislbl=tk.Label(self.overview,text="Analysis", font=self.font).place(relx=0.05, rely=0.34)
+        self.diagramlabel=tk.Label(self.overview)
+        self.diagramlabel.place(relx=0.05, rely=0.37)
         
         self.selected_id=0
         self.count=0
@@ -139,12 +141,12 @@ class Expenses(tk.Tk):
             ax.pie(price,labels=category, autopct='%1.1f%%', startangle=90)
             ax.axis("equal")
 
-            canvas = FigureCanvasTkAgg(fig, master=self.overview)
+            canvas = FigureCanvasTkAgg(fig, master=self.diagramlabel)
             canvas.draw()
             canvas.get_tk_widget().pack(expand=True, fill="both")
         else:
             # If no data, display a message
-            no_data_label = tk.Label(self.overview_tab, text="No data available to display", font=("Arial", 14))
+            no_data_label = tk.Label(self.diagramlabel, text="No data available to display", font=("Arial", 14))
             no_data_label.place(relx=0.1, rely=0.6)
 
 
