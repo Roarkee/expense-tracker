@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk
 import datetime as dt
 from db import *
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 data=Database('expenses.db')
 
@@ -22,8 +24,8 @@ class Expenses(tk.Tk):
         self.notebook.add(self.add_expense, text="Add Expense")
         # self.configure(self.overview,bg="#abd5fa")
    
-        name=ttk.Label(self.overview,text="Hi Pretty Boy!", foreground="black",background="#abd5fa", font=self.font)
-        name.place(relx=0.25, rely=0.05, anchor=tk.CENTER)
+        name=ttk.Label(self.overview,text="Hi Pretty Boy!", foreground="black",background="#abd5fa", font=("Ebrima", 20, "bold"))
+        name.place(x=30, y=30)
         self.box=tk.Frame(self.overview, width=350, height=150, border=2, relief="raised",borderwidth=3, bg="#ae98cd")
         self.box.place(x=30, y=80)
         self.box.pack_propagate(False)
@@ -40,9 +42,12 @@ class Expenses(tk.Tk):
         self.selected_id=0
         self.count=0
 
-        self.balance()
+       
         self.add_expenses()
         self.get_records()
+        self.balance()
+        self.create_piechart()
+        
       
         self.notebook.pack(expand=True, fill="both")
         
@@ -53,7 +58,12 @@ class Expenses(tk.Tk):
 
 
     def saveRecords(self):
-        data.insertRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price_box.get(),date=self.date_box.get())
+        self.price=float(self.price_box.get())
+        data.insertRecords(category=self.category_box.get(),description=self.description_box.get(),price=self.price,date=self.date_box.get())
+        
+        self.refreshdata()
+        self.balance()
+        self.clearBox()
         
 
     def getDate(self):
@@ -68,8 +78,11 @@ class Expenses(tk.Tk):
 
     def balance(self):
         sum=data.fetchRecords(query="SELECT sum(price) from expenses")
+        print(sum)
         for i in sum:
             for j in i:
+                if j is None:
+                    j=0
                 # messagebox.showinfo("Current balance ", f"Amount spent: {j}\n Total Balance: {10000-j}")
                 self.amount_spent.config(text=f"Amount Spent: ${j}")
                 self.mybalance.config(text=f"Balance: ${10000-j}")
@@ -81,12 +94,14 @@ class Expenses(tk.Tk):
         self.tv.item(selected,text="",values=(self.category_box.get(), self.description_box.get(), self.price_box.get(), self.date_box.get(),self.selected_id))
 
         self.clearBox() 
+        self.balance()
         self.tv.after(400, self.refreshdata)   
     
         
     def delete(self):
 
         data.deleteRecords(self.selected_id)
+        self.balance()
         self.refreshdata()
 
     def refreshdata(self):
@@ -98,7 +113,7 @@ class Expenses(tk.Tk):
     def get_records(self):
         self.count=0
         for record in data.fetchRecords(query="SELECT rowid, * FROM expenses"):
-            self.tv.insert(parent="", iid=self.count, index=0, values=(record[0],record[1],record[2],record[3],record[4]))
+            self.tv.insert(parent="", iid=self.count, index=0, values=(record[0],record[3],record[2],record[4],record[1]))
             self.count+=1
         self.tv.after(400, self.refreshdata)
 
@@ -112,6 +127,26 @@ class Expenses(tk.Tk):
             self.description_var.set(selected_value[2])
             self.price_var.set(selected_value[3])
             self.cur_datevar.set(str(selected_value[4]))
+
+
+    def create_piechart(self):
+        boss=data.fetchRecords(query="select category, sum(price) from expenses group by category")
+        if boss:
+            category=[item[0] for item in boss]
+            price=[item[1] for item in boss]
+
+            fig, ax=plt.subplots()
+            ax.pie(price,labels=category, autopct='%1.1f%%', startangle=90)
+            ax.axis("equal")
+
+            canvas = FigureCanvasTkAgg(fig, master=self.overview)
+            canvas.draw()
+            canvas.get_tk_widget().pack(expand=True, fill="both")
+        else:
+            # If no data, display a message
+            no_data_label = tk.Label(self.overview_tab, text="No data available to display", font=("Arial", 14))
+            no_data_label.place(relx=0.1, rely=0.6)
+
 
 
 
@@ -148,7 +183,7 @@ class Expenses(tk.Tk):
         f2.columnconfigure(3, weight=1)
         
         self.cur_datevar=tk.StringVar()
-        self.price_var=tk.IntVar()
+        self.price_var=tk.DoubleVar()
         self.category_var=tk.StringVar()
         self.description_var=tk.StringVar()
       
